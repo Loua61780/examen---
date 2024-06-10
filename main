@@ -1,0 +1,67 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+void reverse_write(const char *temp_filename, FILE *output) {
+    FILE *temp = fopen(temp_filename, "rb");
+    if (!temp) {
+        perror("Failed to open temp file");
+        return;
+    }
+
+    fseek(temp, 0, SEEK_END);
+    long size = ftell(temp);
+    long num_count = size / sizeof(int);
+
+    for (long i = num_count - 1; i >= 0; --i) {
+        fseek(temp, i * sizeof(int), SEEK_SET);
+        int number;
+        fread(&number, sizeof(int), 1, temp);
+        fwrite(&number, sizeof(int), 1, output);
+    }
+
+    fclose(temp);
+}
+
+int main() {
+    const char *input_filename = "input.bin";
+    const char *temp_filename = "temp.bin";
+
+    FILE *input = fopen(input_filename, "rb");
+    if (!input) {
+        perror("Failed to open input file");
+        return 1;
+    }
+
+    FILE *temp = fopen(temp_filename, "wb");
+    if (!temp) {
+        perror("Failed to open temp file");
+        fclose(input);
+        return 1;
+    }
+
+    int number;
+    while (fread(&number, sizeof(int), 1, input) == 1) {
+        if (number % 2 != 0) {
+            fwrite(&number, sizeof(int), 1, temp);
+        }
+    }
+
+    fclose(input);
+    fclose(temp);
+
+    // Re-open input file for writing the reversed numbers
+    FILE *output = fopen(input_filename, "wb");
+    if (!output) {
+        perror("Failed to open input file for writing");
+        return 1;
+    }
+
+    reverse_write(temp_filename, output);
+
+    fclose(output);
+
+    // Clean up the temporary file
+    remove(temp_filename);
+
+    return 0;
+}
